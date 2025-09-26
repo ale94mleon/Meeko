@@ -1,0 +1,89 @@
+[build-system]
+requires=[
+	"setuptools>=61.0",
+	"versioningit",
+]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Hompage = "https://github.com/ccsb-scripps/meeko"
+Documentation = "https://meeko.readthedocs.io"
+Discussions = "https://github.com/ccsb-scripps/meeko/discussions"
+Issues = "https://github.com/ccsb-scripps/meeko/issues"
+Changelog = "https://github.com/ccsb-scripps/meeko/blob/main/docs/source/CHANGELOG.md"
+
+[project]
+name = "meeko"
+dynamic = ["version"]
+description = "Python package for preparing small molecule for docking"
+readme = "README.md"
+
+authors=[
+    {name="Forli Lab", email="forli@scripps.edu"},
+    {name="Alejandro Martínez León", email="ale94mleon@gmail.com"},
+]
+
+classifiers = [
+        'Environment :: Console',
+        'Environment :: Other Environment',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
+        'Natural Language :: English',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: OS Independent',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: C++',
+        'Programming Language :: Python',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+        'Topic :: Scientific/Engineering :: Chemistry',
+        'Topic :: Software Development :: Libraries'
+]
+keywords = [
+    "molecular",
+    "modeling",
+    "drug design",
+    "docking",
+    "autodock",
+]
+
+requires-python = ">= 3.8"
+dependencies = [
+    'numpy>=1.18',
+    "rdkit",
+    "scipy",
+]
+
+[project.license]
+file = "LICENSE"
+
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}.post{distance}"
+dirty = "{base_version}.post{distance}.dev0"
+distance-dirty = "{base_version}.post{distance}.dev0"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["*"]
+default-tag = "0.0.0"
+
+[tool.versioningit.write]
+file = "src/meeko/_version.py"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+moldrug = [
+    "LICENSE",
+    "README.md",
+    "data/params/*",
+
+]
