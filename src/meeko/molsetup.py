@@ -7,13 +7,12 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from collections import defaultdict
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 import json
 import sys
 import warnings
 
 import numpy as np
-import rdkit.Chem
 from rdkit import Chem
 from rdkit.Chem import rdPartialCharges
 from rdkit.Chem import rdMolInterchange
@@ -21,9 +20,7 @@ from rdkit.Chem import rdMolInterchange
 from .utils.jsonutils import rdkit_mol_from_json, tuple_to_string, string_to_tuple
 from .utils import rdkitutils
 from .utils import utils
-from .utils.geomutils import calcDihedral
 from .utils.pdbutils import PDBAtomInfo
-from .receptor_pdbqt import PDBQTReceptor
 
 try:
     from misctools import StereoIsomorphism

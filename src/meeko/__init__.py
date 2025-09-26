@@ -21,10 +21,8 @@ from .molsetup import Restraint
 from .molsetup import UniqAtomParams
 from .utils import rdkitutils
 from .utils import pdbutils
-from .utils import geomutils
 from .utils import utils
 from .atomtyper import AtomTyper
-from .receptor_pdbqt import PDBQTReceptor
 from .polymer import Polymer
 from .polymer import Monomer
 from .polymer import ResiduePadder
@@ -61,7 +59,7 @@ rdkit_logger.handlers[0].setFormatter(
 rdBase.LogToPythonLogger()
 
 __all__ = ['MoleculePreparation', 'RDKitMoleculeSetup', 'MoleculeSetupEncoder',
-           'pdbutils', 'geomutils', 'rdkitutils', 'utils',
+           'pdbutils', 'rdkitutils', 'utils',
            'AtomTyper', 'PDBQTMolecule', 'PDBQTReceptor', 'analysis',
            'Polymer', 'Monomer', 'ResiduePadder', 'ResidueTemplate', 'ResidueChemTemplates',
            'PolymerEncoder', 'MonomerEncoder', 'ResiduePadderEncoder', 'ResidueTemplateEncoder',

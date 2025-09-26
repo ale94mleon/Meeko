@@ -12,20 +12,18 @@ import warnings
 
 from rdkit import Chem
 
-import meeko.macrocycle
 from .molsetup import Bond
 from .molsetup import RDKitMoleculeSetup
 from .atomtyper import AtomTyper
-from .espalomatyper import EspalomaTyper
 from .bondtyper import BondTyperLegacy
-from .hydrate import HydrateMoleculeLegacy
 from .macrocycle import FlexMacrocycle
+from .macrocycle import DEFAULT_MIN_RING_SIZE as M_DEFAULT_MIN_RING_SIZE
+from .macrocycle import DEFAULT_MAX_RING_SIZE as M_DEFAULT_MAX_RING_SIZE
+from .macrocycle import DEFAULT_DOUBLE_BOND_PENALTY as M_DEFAULT_DOUBLE_BOND_PENALTY
 from .flexibility import get_flexibility_model
 from .flexibility import update_closure_atoms
 from .flexibility import merge_terminal_atoms
 from .writer import PDBQTWriterLegacy
-from .reactive import assign_reactive_types
-from .openff_xml_parser import load_openff
 
 pkg_dir = pathlib.Path(__file__).parents[0]
 params_dir = pkg_dir / "data" / "params"
@@ -72,23 +70,20 @@ class MoleculePreparation:
         hydrate=False,
         flexible_amides=False,
         rigid_macrocycles=False,
-        min_ring_size=meeko.macrocycle.DEFAULT_MIN_RING_SIZE,
-        max_ring_size=meeko.macrocycle.DEFAULT_MAX_RING_SIZE,
+        min_ring_size=M_DEFAULT_MIN_RING_SIZE,
+        max_ring_size=M_DEFAULT_MAX_RING_SIZE,
         keep_chorded_rings=False,
         keep_equivalent_rings=False,
-        double_bond_penalty=meeko.macrocycle.DEFAULT_DOUBLE_BOND_PENALTY,
+        double_bond_penalty=M_DEFAULT_DOUBLE_BOND_PENALTY,
         macrocycle_allow_A=False,
-        rigidify_bonds_smarts=[],
-        rigidify_bonds_indices=[],
+        rigidify_bonds_smarts=None,
+        rigidify_bonds_indices=None,
         input_atom_params=None,
         load_atom_params="ad4_types",
         add_atom_types=(),
         input_offatom_params=None,
         load_offatom_params=None,
         charge_model="gasteiger",
-        dihedral_model=None,
-        reactive_smarts=None,
-        reactive_smarts_idx=None,
         add_index_map=False,
         remove_smiles=False,
     ):
@@ -114,9 +109,6 @@ class MoleculePreparation:
         input_offatom_params
         load_offatom_params
         charge_model
-        dihedral_model
-        reactive_smarts
-        reactive_smarts_idx
         add_index_map
         remove_smiles
         """
@@ -132,7 +124,11 @@ class MoleculePreparation:
         self.keep_equivalent_rings = keep_equivalent_rings
         self.double_bond_penalty = double_bond_penalty
         self.macrocycle_allow_A = macrocycle_allow_A
+        if rigidify_bonds_smarts is None:
+            rigidify_bonds_smarts = []
         self.rigidify_bonds_smarts = rigidify_bonds_smarts
+        if rigidify_bonds_indices is None:
+            rigidify_bonds_indices = []
         self.rigidify_bonds_indices = rigidify_bonds_indices
 
         self.input_atom_params = input_atom_params
@@ -147,7 +143,7 @@ class MoleculePreparation:
             raise NotImplementedError("load_offatom_params not implemented")
         self.load_offatom_params = load_offatom_params
 
-        allowed_charge_models = ["espaloma", "gasteiger", "zero"]
+        allowed_charge_models = ["gasteiger", "zero"]
         if charge_model not in allowed_charge_models:
             raise ValueError(
                 "unrecognized charge_model: %s, allowed options are: %s"
@@ -156,25 +152,9 @@ class MoleculePreparation:
 
         self.charge_model = charge_model
 
-        allowed_dihedral_models = [None, "openff", "espaloma"]
-        if dihedral_model in (None, "espaloma"):
-            dihedral_list = []
-        elif dihedral_model == "openff":
-            _, dihedral_list, _ = load_openff()
-        else:
-            raise ValueError(
-                "unrecognized dihedral_model: %s, allowed options are: %s"
-                % (dihedral_model, allowed_dihedral_models)
-            )
+        self.dihedral_model = None
+        self.dihedral_params = []
 
-        self.dihedral_model = dihedral_model
-        self.dihedral_params = dihedral_list
-
-        if dihedral_model == "espaloma" or charge_model == "espaloma":
-            self.espaloma_model = EspalomaTyper()
-
-        self.reactive_smarts = reactive_smarts
-        self.reactive_smarts_idx = reactive_smarts_idx
         self.add_index_map = add_index_map
         self.remove_smiles = remove_smiles
 
@@ -185,7 +165,6 @@ class MoleculePreparation:
             self.double_bond_penalty,
             allow_break_atype_A=self.macrocycle_allow_A,
         )
-        self._water_builder = HydrateMoleculeLegacy()
         self._classes_setup = {Chem.rdchem.Mol: RDKitMoleculeSetup}
 
         if input_offatom_params is None:
@@ -197,10 +176,6 @@ class MoleculePreparation:
             warnings.warn(
                 "keep_equivalent_rings=False ignored because keep_chorded_rings=True",
                 RuntimeWarning,
-            )
-        if (reactive_smarts is None) != (reactive_smarts_idx is None):
-            raise ValueError(
-                "reactive_smarts and reactive_smarts_idx require each other"
             )
 
     @classmethod
@@ -333,12 +308,7 @@ class MoleculePreparation:
             load_atom_params = ()
         for name in load_atom_params:
             filename = None
-            if (
-                name == "openff-2.0.0" or name == "openff"
-            ):  # TODO allow multiple versions
-                vdw_list, _, _ = load_openff()
-                d = {"openff-2.0.0": vdw_list}
-            elif name in packaged_params:
+            if name in packaged_params:
                 filename = packaged_params[name]
             elif name.endswith(".json"):
                 filename = name
@@ -370,13 +340,13 @@ class MoleculePreparation:
                 msg = "overlapping parameter groups: %s" % str(overlapping_groups)
                 raise ValueError(msg)
             params_set_here = set()
-            for group_key, rows in input_atom_params.items():
+            for rows in input_atom_params.values():
                 for row in rows:
                     for param_name in row:
                         if param_name not in ["smarts", "comment", "IDX"]:
                             params_set_here.add(param_name)
             params_set_before = set()
-            for group_key, rows in atom_params.items():
+            for rows in atom_params.values():
                 for row in rows:
                     for param_name in row:
                         if param_name not in ["smarts", "comment", "IDX"]:
@@ -505,18 +475,6 @@ class MoleculePreparation:
             self.dihedral_params,
         )
 
-        # Convert molecule to graph and apply trained Espaloma model
-        if self.dihedral_model == "espaloma" or self.charge_model == "espaloma":
-            molgraph = self.espaloma_model.get_espaloma_graph(setup)
-
-        # Grab dihedrals from graph node and set them to the molsetup
-        if self.dihedral_model == "espaloma":
-            self.espaloma_model.set_espaloma_dihedrals(setup, molgraph)
-
-        # Grab charges from graph node and set them to the molsetup
-        if self.charge_model == "espaloma":
-            self.espaloma_model.set_espaloma_charges(setup, molgraph)
-
         # merge hydrogens (or any terminal atoms)
         indices = set()
         for atype_to_merge in self.merge_these_atom_types:
@@ -536,10 +494,6 @@ class MoleculePreparation:
             self.rigidify_bonds_indices,
         )
 
-        # 4 . hydrate molecule
-        if self.hydrate:
-            self._water_builder.hydrate(setup)
-
         self.calc_flex(
             setup,
             root_atom_index,
@@ -548,32 +502,10 @@ class MoleculePreparation:
             glue_pseudo_atoms,
         )
 
-        if self.reactive_smarts is None:
-            setups = [setup]
-        else:
-            reactive_types_dicts = assign_reactive_types(
-                setup,
-                self.reactive_smarts,
-                self.reactive_smarts_idx,
-            )
-
-            if len(reactive_types_dicts) == 0:
-                raise RuntimeError("reactive SMARTS didn't match")
-
-            setups = []
-            for r in reactive_types_dicts:
-                new_setup = setup.copy()
-                # There is no guarantee that the addition order in the dictionary will be the correct order to
-                # create the list in, so first sorts the keys from the dictionary then extracts the values in order
-                # to construct the new atom type list.
-                for idx, atom_type in r.items():
-                    new_setup.atoms[idx].atom_type = atom_type
-                setups.append(new_setup)
-
         # for a gentle introduction of the new API
-        self.deprecated_setup_access = setups
+        self.deprecated_setup_access = [setup]
 
-        return setups
+        return [setup]
 
     @staticmethod
     def check_external_ring_break(molsetup, break_ring_bonds, glue_pseudo_atoms):
