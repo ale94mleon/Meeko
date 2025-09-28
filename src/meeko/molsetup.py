@@ -1654,7 +1654,6 @@ class RDKitMoleculeSetup(MoleculeSetup, MoleculeSetupExternalToolkit):
         Chem.SanitizeMol(mol)
         mol = Chem.AddHs(mol)
         return mol, idx_to_rm, rm_to_neigh
-         
 
     def init_atom(self, assign_charges: bool, coords: list[np.ndarray]):
         """
@@ -2043,13 +2042,9 @@ class RDKitMoleculeSetup(MoleculeSetup, MoleculeSetupExternalToolkit):
                 molname = mol.GetProp("_Name")
             else:
                 molname = ""
-            print(
-                "warning: found the maximum nr of matches (%d) in RDKitMolSetup.get_symmetries_for_rmsd"
-                % max_matches
-            )
-            print(
-                'Maybe this molecule is "too" symmetric? %s' % molname,
-                Chem.MolToSmiles(mol_noHs),
+            warnings.warn(
+                f"Found the maximum nr of matches ({max_matches}) in RDKitMolSetup.get_symmetries_for_rmsd\n"
+                f"Maybe this molecule is \"too\" symmetric? {molname}': {Chem.MolToSmiles(mol_noHs)}"
             )
         return matches
 
