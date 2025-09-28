@@ -32,6 +32,10 @@ else:
 
 from .utils import rdkitutils
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # region DEFAULT VALUES
 DEFAULT_PDBINFO = None
 DEFAULT_CHARGE = 0.0
@@ -2042,7 +2046,7 @@ class RDKitMoleculeSetup(MoleculeSetup, MoleculeSetupExternalToolkit):
                 molname = mol.GetProp("_Name")
             else:
                 molname = ""
-            warnings.warn(
+            logger.debug(
                 f"Found the maximum nr of matches ({max_matches}) in RDKitMolSetup.get_symmetries_for_rmsd\n"
                 f"Maybe this molecule is \"too\" symmetric? {molname}': {Chem.MolToSmiles(mol_noHs)}"
             )
