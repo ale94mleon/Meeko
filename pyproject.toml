@@ -13,7 +13,7 @@ Issues = "https://github.com/ccsb-scripps/meeko/issues"
 Changelog = "https://github.com/ccsb-scripps/meeko/blob/main/docs/source/CHANGELOG.md"
 
 [project]
-name = "meeko"
+name = "meeko4moldrug"
 dynamic = ["version"]
 description = "Python package for preparing small molecule for docking"
 readme = "README.md"
