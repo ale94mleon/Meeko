@@ -6,16 +6,15 @@ requires=[
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-Hompage = "https://github.com/ccsb-scripps/meeko"
-Documentation = "https://meeko.readthedocs.io"
-Discussions = "https://github.com/ccsb-scripps/meeko/discussions"
-Issues = "https://github.com/ccsb-scripps/meeko/issues"
-Changelog = "https://github.com/ccsb-scripps/meeko/blob/main/docs/source/CHANGELOG.md"
+Homepage = "https://github.com/ale94mleon/Meeko"
+Issues = "https://github.com/ale94mleon/Meeko/issues"
+"Original project" = "https://github.com/forlilab/Meeko"
+"Original documentation" = "https://meeko.readthedocs.io"
 
 [project]
 name = "meeko4moldrug"
 dynamic = ["version"]
-description = "Python package for preparing small molecule for docking"
+description = "A trimmed-down Meeko for moldrug: fork of Meeko 0.6.1 without the Python <3.12 cap and the heavier dependencies"
 readme = "README.md"
 license-files = ["LICENSE"]
 
@@ -69,7 +68,7 @@ match = ["*"]
 default-tag = "0.0.0"
 
 [tool.versioningit.write]
-file = "src/meeko/_version.py"
+file = "src/meeko4moldrug/_version.py"
 
 [tool.setuptools]
 include-package-data = true
@@ -78,6 +77,6 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-meeko = [
+meeko4moldrug = [
     "data/params/*",
 ]
